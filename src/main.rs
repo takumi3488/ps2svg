@@ -118,7 +118,7 @@ fn main() {
             "  <line x1=\"{}\" y1=\"{}\" x2=\"{}\" y2=\"{}\" stroke=\"black\" stroke-width=\"{}\" />\n",
             x0, y0, x1, y1, line.4
         );
-        writer.write(res.as_bytes()).unwrap();  
+        writer.write(res.as_bytes()).unwrap();
     }
 
     // SVGのエンドタグを書き込み
