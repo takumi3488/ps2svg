@@ -116,10 +116,10 @@ fn main() {
 
     // 出力
     for line in &lines {
-        let x0 = (line.0 - min_x) * scale;
-        let y0 = (line.1 - min_y) * scale;
-        let x1 = (line.2 - min_x) * scale;
-        let y1 = (line.3 - min_y) * scale;
+        let x0 = ((line.0 - min_x) * scale - width as f64).abs();
+        let y0 = ((line.1 - min_y) * scale - height as f64).abs();
+        let x1 = ((line.2 - min_x) * scale - width as f64).abs();
+        let y1 = ((line.3 - min_y) * scale - height as f64).abs();
         let res = format!(
             "  <line x1=\"{}\" y1=\"{}\" x2=\"{}\" y2=\"{}\" stroke=\"black\" stroke-width=\"{}\" />\n",
             x0, y0, x1, y1, line.4
