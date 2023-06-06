@@ -109,6 +109,8 @@ fn main() {
         max_y = max_y.max(line.1).max(line.3);
     }
     let scale = (width as f64).max(height as f64) / (max_x - min_x).max(max_y - min_y);
+
+    // 出力
     for line in &lines {
         let x0 = (line.0 - min_x) * scale;
         let y0 = (line.1 - min_y) * scale;
