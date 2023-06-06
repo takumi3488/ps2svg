@@ -36,6 +36,10 @@ fn main() {
     // ファイルの読み込み
     let mut args = std::env::args().skip(1);
     let input_file_path = args.next().unwrap_or("fort.50".to_string());
+    if input_file_path == "-h" || input_file_path == "--help" {
+        println!("Usage: ps2svg <input_file> <output_file>\ninput_file: default is fort.50\noutput_file: default is out.svg");
+        return;
+    }
     let output_file_path = args.next().unwrap_or("out.svg".to_string());
     let input_file = File::open(input_file_path).unwrap();
     let output_file = File::create(output_file_path).unwrap();
