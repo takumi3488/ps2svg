@@ -4,6 +4,8 @@ use std::{
     io::{BufRead, BufReader, BufWriter, Write},
 };
 
+use clap::Parser;
+
 struct Point {
     x: f64,
     y: f64,
@@ -28,28 +30,37 @@ impl Point {
         let x0 = self.x;
         let y0 = self.y;
         self.moveto(x, y);
-        return (x0, y0, x, y, self.w);
+        return (x0 + 1e9, y0 + 1e9, x + 1e9, y + 1e9, self.w);
     }
+}
+
+#[derive(Parser)]
+#[command(name = "ps2svg")]
+struct Args {
+    /// Input file path
+    #[arg(short, long, default_value = "fort.50")]
+    input: String,
+
+    /// Output file path
+    #[arg(short, long, default_value = "out.svg")]
+    output: String,
+
+    /// Directions of reverse
+    /// ex) "x" or "y" or "xy"
+    #[arg(short, long, default_value = "None")]
+    reverse: String,
+
+    /// Size of output image
+    #[arg(short, long, default_value = "1000")]
+    size: u32,
 }
 
 fn main() {
     // ファイルの読み込み
-    let mut args = std::env::args().skip(1);
-    let input_file_path = args.next().unwrap_or("fort.50".to_string());
-    if input_file_path == "-h" || input_file_path == "--help" {
-        println!("Usage: ps2svg <input_file> <output_file>\ninput_file: default is fort.50\noutput_file: default is out.svg");
-        return;
-    }
-    let output_file_path = args.next().unwrap_or("out.svg".to_string());
-    let input_file = File::open(input_file_path).unwrap();
-    let output_file = File::create(output_file_path).unwrap();
+    let args = Args::parse();
+    let input_file = File::open(args.input).unwrap();
+    let output_file = File::create(args.output).unwrap();
     let mut writer = BufWriter::new(output_file);
-
-    // SVGのスタートタグを書き込み
-    let width = 800;
-    let height = 800;
-    let start_tag = format!("<svg version=\"1.1\" baseProfile=\"full\" width=\"{}\" height=\"{}\" xmlns=\"http://www.w3.org/2000/svg\">\n", width, height);
-    writer.write(start_tag.as_bytes()).unwrap();
 
     // 正規表現の定義
     let spaces = Regex::new(r"\s+").unwrap();
@@ -85,7 +96,7 @@ fn main() {
 
         // 命令ごとの処理
         if moveto.is_match(&reshaped_line) {
-            let caps = moveto.captures(&reshaped_line).unwrap();
+            let caps: regex::Captures<'_> = moveto.captures(&reshaped_line).unwrap();
             let x = caps[1].parse::<f64>().unwrap();
             let y = caps[2].parse::<f64>().unwrap();
             point.moveto(x, y);
@@ -112,14 +123,28 @@ fn main() {
         min_y = min_y.min(line.1).min(line.3);
         max_y = max_y.max(line.1).max(line.3);
     }
-    let scale = (width as f64).max(height as f64) / (max_x - min_x).max(max_y - min_y);
+    let scale = args.size as f64 / (max_x - min_x).max(max_y - min_y);
+    let width = (max_x - min_x) * scale;
+    let height = (max_y - min_y) * scale;
+
+    // SVGのスタートタグを書き込み
+    let start_tag = format!("<svg version=\"1.1\" baseProfile=\"full\" width=\"{}\" height=\"{}\" xmlns=\"http://www.w3.org/2000/svg\">\n", width, height);
+    writer.write(start_tag.as_bytes()).unwrap();
 
     // 出力
     for line in &lines {
-        let x0 = (line.0 - min_x) * scale;
-        let y0 = ((line.1 - min_y) * scale - height as f64).abs();
-        let x1 = ((line.2 - min_x) * scale - width as f64).abs();
-        let y1 = ((line.3 - min_y) * scale - height as f64).abs();
+        let mut x0 = (line.0 - min_x) * scale;
+        let mut y0 = (line.1 - min_y) * scale;
+        let mut x1 = (line.2 - min_x) * scale;
+        let mut y1 = (line.3 - min_y) * scale;
+        if args.reverse.contains("x") {
+            x0 = rev(x0, width);
+            x1 = rev(x1, width);
+        }
+        if args.reverse.contains("y") {
+            y0 = rev(y0, height);
+            y1 = rev(y1, height);
+        }
         let res = format!(
             "  <line x1=\"{}\" y1=\"{}\" x2=\"{}\" y2=\"{}\" stroke=\"black\" stroke-width=\"{}\" />\n",
             x0, y0, x1, y1, line.4
@@ -129,4 +154,11 @@ fn main() {
 
     // SVGのエンドタグを書き込み
     writer.write("</svg>".as_bytes()).unwrap();
+    writer.flush().unwrap();
+}
+
+fn rev(x: f64, m: f64) -> f64 {
+    let xt = x - m / 2.0;
+    let xt = -xt;
+    xt + m / 2.0
 }
