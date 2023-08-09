@@ -141,7 +141,7 @@ fn main() {
             x0 = rev(x0, width);
             x1 = rev(x1, width);
         }
-        if args.reverse.contains("y") {
+        if !args.reverse.contains("y") {
             y0 = rev(y0, height);
             y1 = rev(y1, height);
         }
