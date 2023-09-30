@@ -53,6 +53,10 @@ struct Args {
     /// Size of output image
     #[arg(short, long, default_value = "1000")]
     size: u32,
+
+    /// Padding of output image (px)
+    #[arg(short, long, default_value = "5")]
+    padding: f64,
 }
 
 fn main() {
@@ -113,6 +117,7 @@ fn main() {
     }
 
     // スケールを調整
+    let padding = args.padding;
     let mut min_x = f64::MAX;
     let mut max_x = f64::MIN;
     let mut min_y = f64::MAX;
@@ -123,9 +128,10 @@ fn main() {
         min_y = min_y.min(line.1).min(line.3);
         max_y = max_y.max(line.1).max(line.3);
     }
-    let scale = args.size as f64 / (max_x - min_x).max(max_y - min_y);
+    let mut scale = args.size as f64 / (max_x - min_x).max(max_y - min_y);
     let width = (max_x - min_x) * scale;
     let height = (max_y - min_y) * scale;
+    scale = (args.size as f64 - 2.0 * padding) / (max_x - min_x).max(max_y - min_y);
 
     // SVGのスタートタグを書き込み
     let start_tag = format!("<svg version=\"1.1\" baseProfile=\"full\" width=\"{}\" height=\"{}\" xmlns=\"http://www.w3.org/2000/svg\">\n", width, height);
@@ -133,10 +139,10 @@ fn main() {
 
     // 出力
     for line in &lines {
-        let mut x0 = (line.0 - min_x) * scale;
-        let mut y0 = (line.1 - min_y) * scale;
-        let mut x1 = (line.2 - min_x) * scale;
-        let mut y1 = (line.3 - min_y) * scale;
+        let mut x0 = (line.0 - min_x) * scale + padding;
+        let mut y0 = (line.1 - min_y) * scale + padding;
+        let mut x1 = (line.2 - min_x) * scale + padding;
+        let mut y1 = (line.3 - min_y) * scale + padding;
         if args.reverse.contains("x") {
             x0 = rev(x0, width);
             x1 = rev(x1, width);
